@@ -1,2 +1,23 @@
-.claude
+# Claude Code 配置
+.claude/
+
+# JSON 配置文件
 .json
+
+# LaTeX 编译中间产物（保留 .pdf 成品）
+*.aux
+*.log
+*.out
+*.toc
+*.run.xml
+*.bbl
+*.blg
+*.bcf
+*-blx.bib
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# Python 缓存
+__pycache__/
+*.pyc
