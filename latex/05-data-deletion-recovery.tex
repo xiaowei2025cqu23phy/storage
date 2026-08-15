@@ -1,0 +1,479 @@
+% ===================================================================
+% 数据删除与恢复的物理原理：从剩磁、电荷残留到信息论极限
+% ===================================================================
+
+\documentclass[11pt,a4paper,twoside]{article}
+
+\usepackage[UTF8]{ctex}
+% CJK fonts auto-detected by ctex (portable: 不硬编码字体文件)
+\usepackage[T1]{fontenc}
+\usepackage{amsthm}
+\usepackage{newtxtext,newtxmath}
+\usepackage[scaled=0.92]{helvet}
+\usepackage{courier}
+\usepackage[margin=2.5cm,top=3cm,bottom=2.8cm]{geometry}
+\usepackage{setspace}\onehalfspacing
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[LE]{\small\itshape 第5篇\quad 数据删除与恢复的物理原理}
+\fancyhead[RO]{\small\itshape 从剩磁、电荷残留到信息论极限}
+\fancyfoot[CE,CO]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\usepackage{amsmath,amsfonts,mathtools,bm,physics}
+\usepackage{siunitx}\sisetup{separate-uncertainty,per-mode=symbol}
+% Custom degree Celsius command (avoids siunitx version issues)
+
+
+\newcommand{\degC}{\ensuremath{{}^{\circ}\mathrm{C}}}
+\usepackage{graphicx,xcolor}
+\usepackage{tikz}\usetikzlibrary{arrows.meta,shapes,decorations.pathmorphing,patterns,calc,positioning}
+\usepackage{float}
+\usepackage{array,booktabs,tabularx,multirow,colortbl}
+\usepackage{enumitem}
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!60!black]{hyperref}
+\usepackage[capitalise,nameinlink,noabbrev]{cleveref}
+\theoremstyle{definition}\newtheorem{definition}{定义}[section]
+\theoremstyle{plain}\newtheorem{theorem}{定理}[section]
+\theoremstyle{remark}\newtheorem{remark}{注解}[section]
+\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}
+\newtcolorbox{physbox}[1][]{colback=red!3!white,colframe=red!50!black,fonttitle=\bfseries,title=安全物理注释,breakable,#1}
+
+% Title page background
+\usepackage{afterpage}
+
+\begin{document}
+
+\title{{\Huge\bfseries 数据删除与恢复的物理原理}\\[8pt]
+       {\Large 从剩磁、电荷残留到信息论极限}\\[12pt]
+       {\normalsize Physical Principles of Data Deletion and Recovery}}
+\author{}\date{\today}
+\maketitle
+
+\begin{center}\rule{0.8\textwidth}{0.5pt}\\[8pt]
+{\small 凝聚态物理与信息存储交叉专题 · 第5篇}\\[4pt]
+{\small 综述性论文——汇总第1--4篇的物理原理，聚焦数据安全应用}
+\end{center}
+
+\begin{abstract}
+\noindent
+在前四篇论文分别阐述磁性存储、半导体电荷存储、光学存储和新兴存储
+的物理原理基础上，本文聚焦一个在数字取证和信息安全中具有根本重要性
+的问题：\textbf{为何\"删除\"不等于\"物理消除\"？}
+我们从固态物理、统计力学和信息论三个角度，系统分析各存储介质中逻辑
+删除操作未能消除物理信息的原因。
+第一部分以HDD为例，分析文件系统删除（仅修改目录项）、快速格式化
+（仅清零元数据）和覆写（剩磁可被MFM探测）三种级别的删除与对应残留；
+给出单次覆写后剩磁信噪比的定量估算（$\approx$ \SI{-30}{-40}{dB}）。
+第二部分以NAND闪存为例，阐述FTL异地更新导致的无效页物理残留机制，
+以及安全擦除（Secure Erase）的物理执行——块擦除的FN隧穿是否彻底
+移除所有电子？评估深能级陷阱中的固定电荷作为潜在残留的风险。
+第三部分从热力学和信息论的交汇点——Landauer原理——出发，
+讨论信息擦除的最小能量耗散（$k_B T \ln 2$），并将信息残留
+以Kullback-Leibler散度做严格的统计量化。
+第四部分介绍先进的数据恢复物理技术：磁力显微镜（MFM）对剩磁的成像、
+SEM电压衬度对浮栅电荷的间接探测、以及基于机器学习的弱信号重建。
+第五部分给出各存储介质安全擦除的物理可靠级评估表。
+本文旨在为信息安全和数字取证提供扎实的、定量的物理基础。
+
+\medskip
+\noindent\textbf{关键词}：数据残留；剩磁；MFM成像；FTL无效页；
+Landauer原理；Kullback-Leibler散度；安全擦除；弱信号恢复
+\end{abstract}
+
+\tableofcontents\newpage
+
+% ===================================================================
+\section{引言：删除的物理悖论}
+\label{sec:intro}
+
+在日常语言中，\"删除\"意味着信息不复存在。但在物理层面，计算机系统中的
+几乎所有\"删除\"操作都不改变存储介质的微观状态：
+
+\begin{itemize}
+  \item \textbf{文件删除}：仅修改文件系统的目录项（将文件名的首字节标记为 \texttt{0xE5}
+  或等价操作），文件的全部数据块在盘片上原封不动。
+  \item \textbf{快速格式化}：仅新建空文件系统的超级块和元数据结构，
+  先前写过的所有扇区保持原有磁化/电荷状态。
+  \item \textbf{SSD的TRIM/UNMAP}：向SSD控制器发送\"此LBA范围不再需要\"的指令，
+  FTL将对应的物理页标记为逻辑无效——浮栅电荷完好无损。
+\end{itemize}
+
+\textbf{真正的物理删除}——将存储介质的所有微观状态重置到与先前内容无关的统一参考态——
+在现代计算机系统中几乎从未自动执行。其原因是物理删除的成本（时间、能量、
+介质寿命损耗）远超逻辑删除。
+
+本文从物理第一性原理出发，逐层解答：
+
+\begin{enumerate}[nosep]
+  \item 各存储介质中，\"删除\"操作到底做了什么物理改变？
+  \item 物理残留给数据恢复提供了怎样的物理基础？
+  \item 安全擦除的物理极限在哪？Landauer原理给出的最小能量耗散是多少？
+  \item 先进恢复技术（MFM, SEM, ML）的物理原理与能力边界在哪？
+\end{enumerate}
+
+% ===================================================================
+\section{HDD中的数据残留与恢复}
+\label{sec:hdd}
+
+\subsection{文件系统层的逻辑删除}
+
+文件系统删除操作只影响三个数据结构：
+\begin{enumerate}
+  \item \textbf{目录项}：文件名首字节被改写为特殊标记（FAT文件系统中 \texttt{0xE5}，
+  ext4中目录项与inode断开链接）。
+  \item \textbf{空间分配位图}：该文件占用的簇被标记为\"空闲\"。
+  \item \textbf{inode/文件记录}：状态字段更新为\"已删除\"。
+\end{enumerate}
+
+\textbf{物理后果}：盘片上对应扇区的磁化方向——百亿个CoCrPt晶粒的
+$\mathbf{m} = \pm \hat{z}$ 模式——完全没有变化。这些扇区中的数据仅仅不再被
+任何文件系统记录引用——它们是\"逻辑上不可见但物理上完整的幽灵数据\"。
+
+恢复只需在空闲空间位图中找到标记为空闲但仍包含有效文件签名的簇——
+成功率取决于该簇尚未被新写入的数据覆写。
+
+\subsection{覆写后的剩磁：究竟残留多少？}
+
+单次覆写（将新数据写入之前有旧数据的扇区）确实改变了大部分晶粒的磁化方向——
+但并非100\%完美。残余的旧磁化信息来源如下：
+
+\subsubsection{写头位置偏离（Write Head Misregistration）}
+
+写磁头的每次定位存在随机偏差。对于道间距 \SI{50}{-70}{nm} 的现代硬盘，
+即使 $\pm \SI{3}{nm}$（$3\sigma$）的偏离，
+磁道边缘也会残留前次写入的磁化。设写入磁道宽 $W$，偏离标准偏差 $\sigma_{\text{misreg}}$，
+边缘残留区域宽度约为 $2\sigma_{\text{misreg}}$。
+
+\subsubsection{不完全磁化翻转}
+
+在写场梯度区（磁道边缘，$H_z < H_K$ 的区域），部分晶粒可能未被完全翻转——
+特别是处于高矫顽力尾部的晶粒（由晶粒尺寸和各向异性分布引起）。
+微磁学模拟（采用Voronoi镶嵌多晶结构的随机LLG方程积分）表明：
+对于 $H_{\text{write}} / H_K \approx 1.5$ 的典型写场，
+未被翻转的晶粒比例约为 $10^{-4}$--$10^{-3}$。
+
+\subsubsection{剩磁的信号强度估计}
+
+覆写后的剩磁信号相对于原始写信号的衰减近似为：
+\begin{equation}\label{eq:remanence-snr}
+  \text{SNR}_{\text{remanent}} \approx -20 \log_{10}\!\left(
+    \frac{2\sigma_{\text{misreg}}}{W}
+    + f_{\text{unswitched}}
+  \right)
+\end{equation}
+代入 $\sigma_{\text{misreg}} \approx \SI{3}{nm}$，$W \approx \SI{50}{nm}$，
+$f_{\text{unswitched}} \approx 10^{-3}$：
+\[
+\text{SNR}_{\text{remanent}} \approx -20 \log_{10}(0.12 + 0.001) \approx \SI{-18}{dB}
+\]
+
+实际测量（Wright et al., 2008, LNCS 5352）表明，
+对于现代PMR HDD，单次覆写后剩磁信噪比低于 \SI{-30}{dB}——
+低于实用恢复的门槛（\SI{\sim -25}{dB}，受限于MFM噪声底）。
+多次覆写可将残余进一步降低，但物理上永远无法达到负无穷。
+
+\begin{physbox}
+  \textbf{剩余风险——Gutmann 35遍覆写方案的再审视。}
+  Peter Gutmann（1996, USENIX Security）提出35遍覆写可防止MFM恢复。
+  当代评估（Wright et al., 2008）认为该方案针对的是1980--1990年代的
+  MFM/RLL编码硬盘（其写头间隙大、定位精度低、高密度下翻转不完备性显著）。
+  对于2005年后的PMR HDD，单次覆写即已使剩磁信噪比低于恢复门槛；
+  美国NIST SP 800-88 Rev.1 (2014) 建议对现代HDD仅执行单次覆写。
+  但从严格的物理学角度——绝对的安全是不存在的，只存在\"在给定攻击预算下
+  不可行\"的安全。
+\end{physbox}
+
+\subsection{剩磁的探测：磁力显微镜（MFM）}
+
+MFM是检测覆写剩磁的核心工具。操作原理为两级扫描：
+\begin{enumerate}
+  \item \textbf{形貌扫描}：探针在近距离（$< \SI{10}{nm}$）以轻敲模式记录表面地形。
+  \item \textbf{磁力扫描}：探针抬升至固定高度（$\sim \SI{50}{-100}{nm}$），
+  以形貌数据为参考，检测磁力梯度 $\partial F_z/\partial z$，
+  通过共振频率偏移 $\Delta f$ 间接测量：
+  \begin{equation}\label{eq:mfm}
+    \Delta f = -\frac{f_0}{2k} \frac{\partial F_z}{\partial z}
+  \end{equation}
+  其中 $f_0 \approx \SI{60}{-100}{kHz}$，$k \approx \SI{1}{-5}{N/m}$。
+\end{enumerate}
+
+MFM探针为Si悬臂 + CoCr或NiFe磁性涂层。磁性涂层的磁矩体积
+$\sim \SI{e-22}{-e-21}{m^3}$，足以检测单个纳米晶粒簇的杂散场
+（$\sim \SI{1}{-10}{Oe}$ 在 \SI{50}{nm} 高度处）。
+
+\textbf{现实限制}：对现代 \SI{4}{TB} HDD（约 $3 \times 10^{13}$ 个晶粒簇）
+进行全盘MFM扫描在时间上不可行——在 \SI{1}{kHz} 像素率下需 $>10^4$ 年。
+MFM剩磁恢复仅适用于微区取证（$\si{\mu m}^2$ 级）——用于确认某特定物理位置
+是否曾被特定数据占据，而非全盘密码学恢复。
+
+% ===================================================================
+\section{NAND闪存中的数据残留与恢复}
+\label{sec:nand}
+
+\subsection{FTL异地更新：数据残留的根本原因}
+
+如第2篇所述，NAND闪存不能就地覆写——修改一个逻辑页的数据需要在新的
+物理页写入新数据，并将旧物理页标记为\"无效（stale）\"。
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  boxL/.style={rectangle,draw=blue!60,fill=blue!5,minimum width=2.5cm,minimum height=1cm},
+  boxP/.style={rectangle,draw=green!50!black,fill=green!5,minimum width=2.5cm,minimum height=1cm},
+  boxI/.style={rectangle,draw=red!60,fill=red!5,minimum width=2.5cm,minimum height=1cm},
+  arrow/.style={->,>=Stealth,thick}
+]
+\node[boxL] (LBA) at (0,2) {LBA X (主机)};
+\node[boxP] (P1) at (-2,0) {物理页 A (旧数据)};
+\node[boxP] (P2) at (2,0) {物理页 B (新数据)};
+
+\draw[arrow,blue!60] (LBA) -- (-2,1.2) node[midway,left] {旧映射};
+\draw[arrow,red!80!black,thick] (LBA) -- (2,1.2) node[midway,right] {新映射};
+\draw[->,red!80!black,dashed] (-1.5,0) -- (-0.3,0) node[midway,above] {\small 标记无效};
+\node[red!80!black] at (-2,-0.7) {stale (数据仍存在!)};
+
+\draw[gray,thin] (-4.5,-1.5) rectangle (4.5,2.8);
+\node at (0,2.6) {FTL映射表};
+\end{tikzpicture}
+\caption{FTL的异地更新。当主机覆写LBA X时，新数据写入物理页B，
+旧物理页A被标记为无效——但其浮栅电荷完好无损，
+物理数据在GC回收该块前完整保留。}
+\label{fig:ftl-outofplace}
+\end{figure}
+
+\subsection{垃圾回收（GC）的不可预测延迟}
+
+\"已删除\"数据在物理上存留的时间窗口由GC触发时机决定：
+\begin{itemize}
+  \item 若SSD空闲空间充足（如 \SI{>30}{\%}），GC可能懒惰运行——
+  无效页可保留数周甚至数月。
+  \item TRIM/UNMAP命令仅通知FTL\"此LBA不再需要\"——
+  GC何时真正擦除该块完全由固件决定。
+  \item 某些企业级SSD的GC策略激进（后台持续回收），
+  而消费级SSD的GC可能在空闲时才触发。
+\end{itemize}
+
+\subsection{物理页的直接读取：绕过FTL的恢复技术}
+
+物理读取NAND页可通过以下技术绕过FTL的保护：
+
+\begin{enumerate}
+  \item \textbf{厂商专用命令（VSC）}：部分SSD控制器允许通过未公开的ATA/NVMe命令
+  读取任意物理块/页。此方法需要逆向工程固件。
+  \item \textbf{芯片拆卸 + NAND编程器}：将NAND闪存芯片从SSD PCB焊下，
+  通过专用NAND闪存编程器（如PC-3000 Flash, Soft-Center Flash Extractor）
+  逐块/逐页读取原始数据。此方法读取的是包含ECC冗余的原始页
+  （\SI{16}{KB} 数据 + 元数据 + ECC）。
+\end{enumerate}
+
+物理读取的技术挑战：
+\begin{itemize}
+  \item \textbf{加扰（Scrambling）}：现代SSD控制器在写入前自动加扰数据以降低CCI和平衡磨损。
+  加扰模式通常为LFSR（线性反馈移位寄存器），种子值存储在页的元数据中。
+  若控制器硬件加密（自加密盘, SED），数据以AES-256加密，无密钥则不可读。
+  \item \textbf{ECC纠正}：物理页读出的原始BER $\approx 10^{-3}$--$10^{-2}$，
+  必须经LDPC/BCH解码器纠正。NAND编程器需内嵌ECC解码算法——
+  不同厂商的ECC格式（码率、校验矩阵）不兼容。
+\end{itemize}
+
+\subsection{ATA Secure Erase 与加密擦除的物理}
+
+\textbf{安全擦除（Secure Erase）}通过ATA Security Erase Unit命令或
+NVMe Format命令执行。物理有两种路径：
+\begin{enumerate}
+  \item \textbf{物理块擦除型}：对所有用户可访问块执行FN隧穿擦除。
+  每个块的所有 $V_{th}$ 分布恢复至擦除态。完成时间：
+  $\sim$ \SI{1}{-5}{min/TB}（受限于擦除操作的并行度和电压建立时间）。
+  \item \textbf{加密擦除（Cryptographic Erase）}：若SSD始终使用硬件加密
+  （如AES-256-XTS），Secure Erase仅需销毁内部存储的介质加密密钥（MEK）。
+  所有数据即刻变为不可解密的密文——无需逐个块物理擦除。完成时间：$< \SI{1}{s}$。
+\end{enumerate}
+
+\textbf{加密擦除的安全评估}：若AES-256密钥被安全销毁（不存留于任何非易失性存储位置），
+且密钥管理无侧信道泄漏，即使攻击者物理读取所有NAND页，面对AES-256密文
+（密钥空间 $2^{256}$），暴力破解所需的计算时间远超宇宙年龄。
+加密擦除是目前最可靠且最快速的数据安全清除方法——
+前提是SSD确实实施了硬件加密且固件无后门。
+
+\subsection{块擦除后的深能级陷阱电荷：最微小的残留风险}
+
+在经历数千次P/E循环后，氧化层深陷阱（能级 $\sim \SI{>1.5}{eV}$）中的电荷
+可能不被常规擦除操作完全清除。这些\textbf{固定电荷}与原始数据间的关系
+目前没有任何已知方法可以提取——深陷阱的空间分布极不规则，
+电荷量与原始数据态的关联在多次P/E后完全被随机化覆盖。
+
+综合评估：对NAND闪存执行\textbf{物理块擦除}或\textbf{加密擦除}后，
+数据恢复的可能性没有已知的物理依据。但这并不意味着概率严格为零——
+物理系统中没有绝对事件。
+
+% ===================================================================
+\section{信息擦除的热力学极限}
+\label{sec:landauer}
+
+\subsection{Landauer原理：擦除的最小能耗}
+
+Rolf Landauer（1961, IBM J. Res. Dev.）推导了计算中信息擦除的
+热力学极限：将1 bit信息——即从 {0, 1} 两种可能态收敛到单一确定态——
+在温度 $T$ 下的最小能量耗散为：
+\begin{equation}\label{eq:landauer-principle}
+  \boxed{ \Delta E_{\text{min}} = k_B T \ln 2 }
+\end{equation}
+在室温 $T = \SI{300}{K}$ 下：
+\[
+\Delta E_{\text{min}} = \SI{1.38e-23}{J/K} \times \SI{300}{K} \times \ln 2
+\approx \SI{2.87e-21}{J} \approx \SI{18}{meV}
+\]
+这个值极小——远低于现代存储器件每个比特的实际擦除能耗
+（通常 $10^5$--$10^8$ 倍于此值）。
+
+\subsubsection{Landauer原理的深层含义}
+
+\begin{itemize}
+  \item 信息擦除（将相空间的体积减半）\textbf{必然}增加环境的熵——
+  逻辑运算（如NOT门）可以是可逆的（不增熵），但\textbf{擦除在物理上
+  本质不可逆}——因为它是多对一的映射。
+  \item Landauer极限是\textbf{任何物理擦除机制的下界}——无论磁化翻转、
+  电荷隧穿、铁电极化切换——只要擦除将2态映射到1态（或 $2^N \to 1$），
+  且系统与环境耦合至热平衡。
+  \item 这一极限在今年已被实验验证
+  （B\'{e}rut et al., 2012, Nature, 用光镊中的胶体球双阱势）。
+\end{itemize}
+
+\subsection{完全擦除 vs 残留：概率视角的信息量化}
+
+从统计物理角度，\"完全擦除\"不是二值状态而是一个概率概念。
+设擦除前比特为 $X \in \{0,1\}$，擦除后物理状态 $S$ 的分布为
+$\rho_{\text{final}}(S)$。
+信息残留可用 $X$ 与 $S$ 之间的\textbf{互信息}（Kullback-Leibler散度的一个规范形式）严格量化：
+\begin{equation}\label{eq:kl}
+  I(X; S) = D_{KL}\!\left( P(X,S) \,\|\, P(X)P(S) \right)
+\end{equation}
+
+若 $I(X;S) \to 0$，则擦除后的状态与原始比特统计独立，擦除在物理上\"完全\"。
+若 $I(X;S) > 0$，则 $\rho_{\text{final}}$ 中残留的统计关联可能在足够多样的
+测量中被检测到（通过Chernoff-Stein引理——假设检验的错误概率随样本数指数衰减
+$\propto \exp(-N \cdot I(X;S))$）。
+
+\textbf{物理后果}：
+\begin{itemize}
+  \item 对于磁记录，擦除的物理极限受 $k_B T$ 与 $K_u V$ 的比值约束。
+  通过施加足够多的覆写遍数，$I(X;S)$ 可降至任意小——但严格为零需要
+  无限能量/无限时间（永远不可达）。
+  \item 对于加密擦除（AES-256），$I(X;S)$ 与攻击者的计算能力相关而非
+  热力学约束——这是\"计算安全\"与\"信息论安全\"之间的根本区别。
+\end{itemize}
+
+% ===================================================================
+\section{先进数据恢复的物理技术}
+\label{sec:recovery-tech}
+
+\subsection{磁力显微镜（MFM）剩磁成像} 如\cref{sec:hdd}所述。
+
+\subsection{SEM电压衬度探测浮栅电荷}
+
+扫描电子显微镜（SEM）在低加速电压（$\sim \SI{1}{kV}$）下，
+二次电子产率对表面电位敏感——此即\textbf{电压衬度（Voltage Contrast）}成像。
+
+编程单元（浮栅带更多负电荷）$\to$ 表面电位更低 $\to$
+二次电子产率更高 $\to$ SEM图像中亮度更高（或反相取决于工作点）。
+对去钝化层后的NAND芯片，SEM电压衬度可逐字线区分编程/擦除态。
+
+但空间分辨率是致命限制：最先进SEM的电子束斑 $\sim \SI{0.5}{nm}$，
+而电压衬度的对比度范围（二次电子的溢出区域）远大于结构尺寸
+（$\sim \SI{20}{-50}{nm}$）。对 \SI{15}{nm} 节点的3D NAND（>200层堆叠），
+SEM电压衬度的单单元读取极不可靠。
+
+\subsection{开尔文探针力显微镜（KPFM）}
+
+KPFM测量表面\textbf{接触电势差（CPD）}，电位分辨率可达 $\sim \SI{1}{mV}$。
+浮栅中不同电子数产生的表面电位差 $\Delta V_{\text{surface}}^{1e}
+\approx \SI{80}{-100}{mV}$（量级与 $\Delta V_{th}^{1e}$ 相同），
+理论上单电子级别的检测是可行的。
+
+然而KPFM的空间分辨率受探针半径限制（$\sim \SI{20}{-50}{nm}$），
+且对3D NAND只有最顶层可被探测。该技术目前停留在概念验证阶段。
+
+\subsection{基于机器学习的弱信号恢复}
+
+近期，深度学习——特别是卷积神经网络（CNN）和扩散模型——开始被探索用于
+低级存储信号的恢复：
+
+\begin{itemize}
+  \item \textbf{MFM图像去噪与超分辨率}：CNN模型（如U-Net架构）接收低SNR的
+  MFM剩磁图，在模拟数据集（已知真实磁化图案 + 模拟MFM噪声传递函数）上训练，
+  输出逐像素的原始比特预测。\textbf{前提}：训练数据与测试数据的噪声统计必须匹配。
+  \item \textbf{闪存软读取的隐式信息提取}：在GC擦除前，对同一物理页进行多次
+  \textbf{软读取（Soft Read）}——采用多个偏移的参考电压（如7--15个），
+  获取各单元对 $V_{th}$ 的精估计。即使该单元已被FTL标记为\"无效\"，
+  软读取阵列可重建原始数据——\textbf{前提}：GC尚未物理擦除该块。
+\end{itemize}
+
+% ===================================================================
+\section{各存储介质的安全擦除：物理可靠级总结}
+\label{sec:summary}
+
+\begin{table}[H]
+\centering\caption{各存储介质安全擦除方法的物理可靠级评估}
+\begin{tabular}{@{}p{3cm}p{4cm}p{4.5cm}p{2.5cm}@{}}
+\toprule
+介质 & 最可靠清除方法 & 物理基础 & 可靠级别 \\
+\midrule
+HDD & 单次全覆写 + 验证 & 改变所有扇区磁畴方向；剩磁 SNR $<$\SI{-30}{dB} & 实用安全 \\
+HDD & 物理粉碎（颗粒 $< \SI{2}{mm}$） & 将晶粒间物理对应关系不可逆混淆 & 绝对安全 \\
+SSD（无加密） & Secure Erase（全块擦除） & FN隧穿移除所有浮栅电荷 & 高度可靠$^\dagger$ \\
+SSD（硬件加密） & 加密擦除（销毁MEK） & AES-256密钥销毁 $\to$ 数据不可解密的密文 & 最可靠且最快 \\
+光盘（ROM） & 物理破坏 & 反射坑结构不可逆损坏 & 绝对安全 \\
+光盘（RW） & 全盘覆写 + 验证 & 全部相变标记重新非晶化 & 实用安全 \\
+PCM/ReRAM & 全阵列SET/RESET & 所有单元切换至统一态 & 需验证$^\ddagger$ \\
+\bottomrule
+\end{tabular}
+
+\vspace{4pt}
+{\footnotesize
+$^\dagger$ 高度可靠指不存在已知物理恢复方法。但深能级陷阱固定电荷的理论上
+的极限残留不能被绝对排除——尽管没有已知的提取方法。\\
+$^\ddagger$ 新兴存储的擦除完全性研究不如HDD和SSD充分，建议配合加密措施。
+}
+\end{table}
+
+% ===================================================================
+\section{结论}
+
+本文从物理第一性原理出发，论证了\"逻辑删除 $\neq$ 物理消除\"的深层原因：
+
+\begin{enumerate}
+  \item \textbf{HDD}：删除仅修改文件系统元数据，覆写后剩磁以 $\sim$\SI{-30}{-40}{dB}
+  的SNR残留，MFM可探测。实用恢复所需SNR门槛约 \SI{-25}{dB}，
+  单次覆写对现代PMR HDD通常已足够。
+
+  \item \textbf{NAND闪存}：FTL异地更新使得TRIM后物理页数据完好。
+  GC延迟导致不确定性残留窗口。物理块擦除（FN隧穿）或加密擦除可物理清除数据；
+  加密擦除（销毁AES-256 MEK）是当前最可靠且最高效的方案。
+
+  \item \textbf{Landauer原理}：信息擦除的最小能量为 $k_B T \ln 2 \approx \SI{18}{meV}$/bit。
+  从概率角度，擦除永远无法使残留与原始态的KL散度严格为零。
+
+  \item \textbf{高级恢复技术}（MFM、SEM VC、KPFM、ML弱信号重建）在不断降低
+  残留信号恢复的实用SNR门槛。但对于正确执行的安全擦除（特别是加密擦除），
+  这些技术没有已知的恢复能力。
+\end{enumerate}
+
+最终，数据的安全删除并非取决于\"是否执行了删除命令\"，而是取决于
+\"存储介质是否经历了将微观状态重置到一个不依赖于先前内容的参考态的物理过程\"——
+再乘以该过程的统计完备性。\textbf{物理上绝对的擦除不存在，但在给定的攻击预算下
+不可恢复的擦除是可实现的。}
+
+% ===================================================================
+\begin{thebibliography}{99}
+\bibitem{gutmann96} P. Gutmann, ``Secure deletion of data from magnetic and solid-state memory,'' \textit{Proc. 6th USENIX Security Symp.}, pp. 77--89, 1996. \href{https://www.usenix.org/legacy/publications/library/proceedings/sec96/full_papers/gutmann/}{usenix.org}
+\bibitem{wright08} C. Wright, D. Kleiman, and S. Sundhar, ``Overwriting hard drive data: The great wiping controversy,'' \textit{LNCS}, vol. 5352, pp. 243--257, 2008. \href{https://doi.org/10.1007/978-3-540-89862-7_21}{doi:10.1007/978-3-540-89862-7\_21}
+\bibitem{landauer61} R. Landauer, ``Irreversibility and heat generation in the computing process,'' \textit{IBM J. Res. Dev.}, vol. 5, pp. 183--191, 1961. \href{https://doi.org/10.1147/rd.51.0183}{doi:10.1147/rd.51.0183}
+\bibitem{berut12} A. B\'{e}rut, A. Arakelyan, A. Petrosyan, S. Ciliberto, R. Dillenschneider, and E. Lutz, ``Experimental verification of Landauer's principle linking information and thermodynamics,'' \textit{Nature}, vol. 483, pp. 187--189, 2012. \href{https://doi.org/10.1038/nature10872}{doi:10.1038/nature10872}
+\bibitem{wei11} M. Wei, L. M. Grupp, F. E. Spada, and S. Swanson, ``Reliably erasing data from flash-based solid state drives,'' \textit{Proc. 9th USENIX FAST}, pp. 105--117, 2011. \href{https://www.usenix.org/conference/fast11/reliably-erasing-data-flash-based-solid-state-drives}{usenix.org}
+\bibitem{nist14} R. Kissel, A. Regenscheid, M. Scholl, and K. Stine, ``Guidelines for Media Sanitization,'' \textit{NIST Special Publication 800-88}, Rev. 1, 2014. \href{https://doi.org/10.6028/NIST.SP.800-88r1}{doi:10.6028/NIST.SP.800-88r1}
+\bibitem{gomez96} R. D. Gomez, E. R. Burke, and I. D. Mayergoyz, ``Magnetic imaging in the presence of external fields: Technique and applications,'' \textit{J. Appl. Phys.}, vol. 79, pp. 6441--6446, 1996. \href{https://doi.org/10.1063/1.361966}{doi:10.1063/1.361966}
+\bibitem{cover91} T. M. Cover and J. A. Thomas, \textit{Elements of Information Theory}, Wiley, 1991 (Ch. 12: Chernoff-Stein Lemma). \href{https://doi.org/10.1002/047174882X}{doi:10.1002/047174882X}
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,366 @@
+% ===================================================================
+% 新兴非易失性存储器的物理原理
+% ===================================================================
+
+\documentclass[11pt,a4paper,twoside]{article}
+
+\usepackage[UTF8]{ctex}
+% CJK fonts auto-detected by ctex
+\usepackage[T1]{fontenc}
+\usepackage{amsthm}
+\usepackage{newtxtext,newtxmath}
+\usepackage[scaled=0.92]{helvet}
+\usepackage[margin=2.5cm,top=3cm,bottom=2.8cm]{geometry}
+\usepackage{setspace}\onehalfspacing
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[LE]{\small\itshape 第4篇\quad 新兴非易失性存储器的物理原理}
+\fancyhead[RO]{\small\itshape 自旋转移矩、阻变与铁电}
+\fancyfoot[CE,CO]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\usepackage{amsmath,amsfonts,mathtools,bm,physics}
+\usepackage{siunitx}\sisetup{separate-uncertainty,per-mode=symbol}
+% Custom degree Celsius command (avoids siunitx version issues)
+
+
+\newcommand{\degC}{\ensuremath{{}^{\circ}\mathrm{C}}}
+\usepackage{graphicx,xcolor}
+\usepackage{tikz}\usetikzlibrary{arrows.meta,shapes,decorations.pathmorphing,calc,positioning}
+\usepackage{float}
+\usepackage{array,booktabs,tabularx,multirow,colortbl}
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!60!black]{hyperref}
+\usepackage[capitalise,nameinlink,noabbrev]{cleveref}
+\theoremstyle{definition}\newtheorem{definition}{定义}[section]
+\theoremstyle{plain}\newtheorem{theorem}{定理}[section]
+\theoremstyle{remark}\newtheorem{remark}{注解}[section]
+\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}
+\newtcolorbox{physbox}[1][]{colback=orange!3!white,colframe=orange!60!black,fonttitle=\bfseries,title=器件物理注释,breakable,#1}
+
+\begin{document}
+
+\title{{\Huge\bfseries 新兴非易失性存储器的物理原理}\\[8pt]
+       {\Large 自旋转移矩、阻变与铁电}\\[12pt]
+       {\normalsize Physical Principles of Emerging Non-Volatile Memories}}
+\author{}\date{\today}
+\maketitle
+
+\begin{center}\rule{0.8\textwidth}{0.5pt}\\[8pt]
+{\small 凝聚态物理与信息存储交叉专题 · 第4篇}\\[4pt]
+\end{center}
+
+\begin{abstract}
+\noindent
+超越传统磁记录和浮栅闪存的新型非易失性存储器正从实验室走向产业化。
+本文从凝聚态物理的核心领域出发，系统阐述四类新兴存储技术的物理基础。
+第一部分讨论自旋转移矩磁阻存储器（STT-MRAM）：从自旋转移矩
+（Slonczewski-Berger效应）的LLG-Slonczewski方程出发，
+分析自旋极化电流如何翻转自由层磁化，导出临界电流的解析标度
+$I_{c0} \propto \alpha K_u V$。第二部分涉及自旋轨道矩存储器（SOT-MRAM）：
+Rashba效应和自旋Hall效应如何实现读写路径分离及亚纳秒翻转速度。
+第三部分分析阻变存储器（ReRAM/忆阻器）：
+氧空位迁移引起的价态变化机制（VCM）与导电细丝的量子点接触理论，
+以及电化学金属化机制（ECM）中的金属离子氧化还原动力学。
+第四部分阐述相变存储器（PCM）的电气化物理：阈值切换的
+Poole-Frenkel发射与临界场模型。第五部分介绍铁电存储器
+（FeRAM/FeFET）的铁电极化翻转动力学与负电容效应。
+本文旨在从量子输运、强关联系统和介观物理的视角，
+提供理解新型存储的统一理论框架。
+
+\medskip
+\noindent\textbf{关键词}：自旋转移矩；自旋轨道矩；LLG-Slonczewski方程；
+忆阻器；价态变化机制；相变存储器；铁电场效应晶体管
+\end{abstract}
+
+\tableofcontents\newpage
+
+% ===================================================================
+\section{引言}
+
+当前主流的非易失性存储技术——HDD（磁滞）和NAND闪存（浮栅电荷）——
+均接近其物理缩放极限。HDD受超顺磁极限约束（$K_u V / k_B T > 60$），
+NAND闪存面临隧穿氧化层厚度不可再降和电子离散性的瓶颈。
+四类基于全新物理机制的新型存储器已成为研究前沿：
+STT/SOT-MRAM（自旋电子学）、ReRAM（离子输运与缺陷化学）、
+PCM（相变动力学）、FeRAM/FeFET（铁电体物理）。
+
+% ===================================================================
+\section{自旋转移矩磁阻存储器（STT-MRAM）}
+\label{sec:stt}
+
+\subsection{LLG-Slonczewski方程}
+
+STT-MRAM的存储单元是纳米柱状磁性隧道结（MTJ）：
+参考层（磁化固定）/ MgO势垒（$\sim \SI{1}{nm}$）/ 自由层（磁化可翻转）。
+比特状态由TMR电阻读回。写入不同于传统磁场写入——而是通过
+\textbf{自旋极化电流}直接翻转自由层磁化。
+
+当电流流经磁化固定的参考层后，传导电子被部分自旋极化。
+这些自旋极化电子进入自由层（FL）后，通过s-d交换作用将其横向自旋角动量
+传递给FL的局域磁矩。由角动量守恒，这等效于在FL磁化上施加了
+\textbf{自旋转移矩（Spin Transfer Torque, STT）}。
+
+包含STT的广义LLG方程——LLG-Slonczewski方程：
+\begin{equation}\label{eq:llg-stt}
+  \boxed{
+  \frac{\partial \mathbf{m}}{\partial t}
+  = -\gamma \mathbf{m} \times \mathbf{H}_{\text{eff}}
+  + \alpha \mathbf{m} \times \frac{\partial \mathbf{m}}{\partial t}
+  + \frac{\gamma \hbar I}{2 e M_s V}\, g(\theta)\,
+    \mathbf{m} \times (\mathbf{m} \times \hat{\mathbf{p}})
+  }
+\end{equation}
+其中：
+\begin{itemize}
+  \item $\mathbf{m}$ 为FL的单位磁化矢量，$\hat{\mathbf{p}}$ 为参考层磁化方向。
+  \item $g(\theta)$ 为自旋转移效率因子（Slonczewski, 1996, JMMM）：
+  \begin{equation}
+    g(\theta) = \left[ -4 + (1+P)^{3/2} \frac{3 + \cos\theta}{4 P^{3/2}} \right]^{-1}
+  \end{equation}
+  其中 $\theta = \arccos(\mathbf{m}\cdot\hat{\mathbf{p}})$，$P$ 为自旋极化率。
+  \item $I$ 为电流（正值对应电子从FL $\to$ RL），$V$ 为FL体积。
+\end{itemize}
+
+STT项的物理形式 $\mathbf{m} \times (\mathbf{m} \times \hat{\mathbf{p}})$
+与阻尼项相同——因此STT可视作\textbf{电流诱导的负阻尼}。
+当STT方向与自然阻尼相反且幅度超过自然阻尼时，磁化获得净能量，
+可被驱动翻转。
+
+\subsection{临界电流的解析标度}
+
+在小阻尼极限下（$\alpha \ll 1$），通过LLG-Slonczewski方程的线性稳定性分析，
+零温下翻转临界电流为：
+\begin{equation}\label{eq:Ic0}
+  \boxed{ I_{c0} = \frac{2e}{\hbar} \frac{\alpha}{g(0)}\, E_b
+  = \frac{2e}{\hbar} \frac{\alpha}{g(0)}\, K_u V }
+\end{equation}
+
+\textbf{标度分析}：
+$I_{c0} \propto \alpha K_u V$——Gilbert阻尼越低、各向异性越小、体积越小
+$\to$ 临界电流越低。
+对于典型CoFeB/MgO/CoFeB MTJ（直径 \SI{50}{nm}，
+$M_s \approx \SI{1.0e6}{A/m}$，$K_u \approx \SI{3e5}{J/m^3}$，
+$\alpha \approx 0.01$，$g(0) \approx 0.3$）：
+\begin{equation}
+  I_{c0} \approx \frac{2 \times 1.6\times10^{-19}}{1.05\times10^{-34}}
+  \times \frac{0.01}{0.3}
+  \times 2 \times 3\times10^5 \times \frac{4}{3}\pi (25\times10^{-9})^3
+  \approx 60\,\mu\mathrm{A}
+\end{equation}
+对应的电流密度 $J_c \approx \SI{3e6}{A/cm^2}$（\SI{3e10}{A/m^2}）。
+
+\cref{eq:Ic0} 揭示了STT-MRAM的核心设计权衡：
+缩微化降低 $I_c$（利于写入），但 $K_u V$ 的降低也削弱了热稳定性
+（$\tau \propto \exp(K_u V / k_B T)$）。这个\"$I_c$ vs $\tau$\" 的权衡
+是STT-MRAM物理设计的中心问题。
+
+\subsection{有限温度下的随机翻转}
+
+在有限温度下，热涨落降低了有效翻转能垒。翻转是\textbf{随机过程}，
+写入错误率（WER）由N\'{e}el-Brown型的概率给出：
+\begin{equation}
+  \text{WER} = 1 - \exp\!\left[ -t_p / \tau(I) \right]
+\end{equation}
+其中 $\tau(I) = \tau_0 \exp[(\Delta E(I)) / k_B T]$。
+为了保证 WER $< 10^{-9}$（存储级可靠性），需要在电流和脉冲宽度之间留足裕度。
+
+% ===================================================================
+\section{自旋轨道矩存储器（SOT-MRAM）}
+\label{sec:sot}
+
+\subsection{自旋Hall效应的物理}
+
+SOT-MRAM将读写路径分离。读取仍通过MTJ（垂直电流），
+写入通过面内电流流经强自旋轨道耦合（SOC）的重金属层，
+利用\textbf{自旋Hall效应（SHE）}产生垂直于电流方向的自旋流：
+\begin{equation}\label{eq:she}
+  \mathbf{J}_s = \theta_{SH}\, \frac{\hbar}{2e}\,
+                (\hat{\boldsymbol{\sigma}} \times \mathbf{J}_c)
+\end{equation}
+其中 $\theta_{SH}$ 为自旋Hall角（$\beta$-W: $\theta_{SH} \approx 0.3$--$0.5$；
+Pt: $\theta_{SH} \approx 0.05$--$0.1$）。
+
+在重金属/FM界面累积的自旋注入对FM磁化施加
+\textbf{类阻尼矩（damping-like torque）}：
+$\boldsymbol{\tau}_{DL} \propto \mathbf{m} \times (\mathbf{m} \times \hat{\boldsymbol{\sigma}})$，
+以及通过Rashba-Edelstein效应的\textbf{类场矩（field-like torque）}。
+
+SOT-MRAM相对于STT-MRAM的关键优势：
+写入电流不穿过隧穿势垒（读写路径分离），预设势垒免于写入应力；
+开关速度 $< \SI{1}{ns}$（STT为 \SI{3}{-10}{ns}）。
+
+确定性翻转需要打破对称性——目前的主要方案：
+外部偏置磁场、楔形氧化层（引入横向梯度）、
+交换偏置反铁磁（如IrMn/CoFeB）。无场翻转是SOT-MRAM商业化的关键障碍。
+
+% ===================================================================
+\section{阻变存储器（ReRAM / 忆阻器）}
+\label{sec:reram}
+
+\subsection{忆阻器的唯象定义}
+
+Chua（1971）从电路对称性论证了第四基本元件——忆阻器（Memristor）的存在：
+\begin{equation}
+  d\phi = M(q)\, dq
+\end{equation}
+其中 $M(q)$ 为忆阻值——依赖于电荷历史的非线性电阻。
+2008年HP实验室在Pt/TiO$_2$/Pt结构中首次实现了固态忆阻器
+（Strukov et al., Nature, 2008）。
+
+\subsection{价态变化机制（VCM）：氧空位导电细丝}
+
+VCM是HfO$_x$、TaO$_x$、TiO$_x$等过渡金属氧化物的主导阻变机制。
+经过初始电铸（electroforming）后，金属氧化物中形成一条
+\textbf{氧空位富集的导电细丝（Conductive Filament, CF）}。
+
+CF最窄处直径缩小至 \SI{\sim 1}{-5}{nm}，此时电子输运从扩散型转变为
+弹道/准弹道输运。在低阻态（LRS），电导接近Landauer量子极限：
+\begin{equation}\label{eq:landauer}
+  G_{\text{LRS}} = \frac{2e^2}{h} \sum_n T_n
+                 \approx N_{ch}\, G_0
+\end{equation}
+其中 $G_0 = 2e^2/h \approx (12.9\ \si{k\Omega})^{-1}$ 为单模量子电导，
+$N_{ch}$ 为导通的横向模式数。
+
+\textbf{SET}（HRS $\to$ LRS）：外加正电压，氧空位在电场下向阴极迁移，
+在CF最窄处积累，恢复逾渗通路。
+
+\textbf{RESET}（LRS $\to$ HRS）：反向电压 + 焦耳热辅助，
+氧离子（O$^{2-}$）迁移回CF区域，与氧空位复合，断裂CF。
+RESET由氧离子的场助漂移-扩散方程驱动：
+\begin{equation}\label{eq:ion-transport}
+  \mathbf{J}_{O^{2-}} = -D \nabla n_{O^{2-}} + \mu n_{O^{2-}} \mathbf{E}
+\end{equation}
+其中 $D/\mu = k_B T / (2e)$（Nernst-Einstein），
+$D = D_0 \exp(-E_m/k_B T)$，$E_m \approx \SI{0.3}{-0.7}{eV}$ 为迁移激活能。
+
+\subsection{电化学金属化机制（ECM/CBRAM）}
+
+ECM利用活性金属（Ag, Cu）的电化学溶解/沉积：
+\begin{itemize}
+  \item SET：阳极Ag $\to$ Ag$^+$ + e$^-$溶解 $\to$
+  Ag$^+$在电场下穿过固体电解质 $\to$ 在惰性阴极还原沉积 $\to$
+  金属纳米细丝桥接两电极 $\to$ LRS
+  \item RESET：反向电压使细丝从最脆弱处溶解 $\to$ HRS
+\end{itemize}
+ECM的开关比 $R_{OFF}/R_{ON} > 10^6$（VCM约 $10^2$--$10^4$），
+但保持力与耐久性弱于VCM。
+
+\subsection{逾渗性与随机性}
+
+CF的连接/断裂本质上是\textbf{逾渗相变}。在逾渗阈值附近，
+CF的电导涨落巨大（临界涨落），这赋予了ReRAM内禀的随机性——
+既是可靠性挑战（读取噪声大），也是物理不可克隆函数（PUF）和安全密钥生成
+的熵源。
+
+% ===================================================================
+\section{相变存储器（PCM）}
+\label{sec:pcms}
+
+\subsection{光存储的电气化}
+
+PCM是光学相变存储（第3篇）的电气化版本，采用相同的GST-225硫系相变材料，
+但写入能量来自焦耳热而非光子；
+读取通过电阻对比度（而非反射率对比度）：
+\begin{itemize}
+  \item \textbf{SET（晶化, 低阻态 $\sim 10^{-3}\,\Omega\cdot$cm）}：
+  中等电流脉冲（100--300\,$\mu$A）加热至 $T > T_g$ 且 $T < T_m$，
+  晶化为多晶态。
+  \item \textbf{RESET（非晶化, 高阻态 $\sim 10^{2}\,\Omega\cdot$cm）}：
+  高电流短脉冲（500--1000\,$\mu$A, $< \SI{50}{ns}$）
+  加热至 $> T_m$，急冷冻结为非晶态。
+\end{itemize}
+电阻率对比度 $> 10^5$ 使PCM可实现小单元面积的多级存储（3--4 bits/cell）。
+
+\subsection{阈值切换的物理}
+
+在RESET前，非晶态GST为高阻态——如何产生足够大的焦耳热以达到 $T_m$？
+答案在于\textbf{阈值切换（Threshold Switching）}。
+当电压超过临界阈值 $V_{th}$ 时，非晶态GST电阻骤降（从极高阻切换至暂态低阻），
+允许大电流通过加热。
+
+主要理论模型：
+\begin{enumerate}
+  \item \textbf{Poole-Frenkel（PF）发射}：非晶态陷阱的场助热发射导致
+  载流子浓度指数增长。PF电流：
+  \begin{equation}
+    J \propto E \exp\!\left[ -\frac{e}{k_B T}
+          \left( \phi_t - \sqrt{\frac{eE}{\pi\varepsilon_0\varepsilon_r}} \right) \right]
+  \end{equation}
+  当PF发射增殖至陷阱填充阈值时，载流子雪崩式增长 $\to$ 电阻骤降。
+
+  \item \textbf{临界场模型}：高场下电子动能激发价带-导带跃迁（类击穿）。
+  阈值场 $E_{th} \approx \SI{100}{-200}{MV/m}$，
+  对于 \SI{100}{nm} 电极间距对应 $V_{th} \approx \SI{1}{-2}{V}$。
+\end{enumerate}
+
+\subsection{电阻漂移的物理}
+
+非晶态GST随时间的结构弛豫（原子重排以降低能量）导致电阻幂律增大：
+\begin{equation}\label{eq:drift}
+  R(t) = R_0 \left( \frac{t}{t_0} \right)^\nu
+\end{equation}
+其中漂移指数 $\nu \approx 0.02$--$0.1$。
+这是多级PCM面临的最大可靠性问题——相邻电阻态可能在数小时内漂移交叉。
+
+% ===================================================================
+\section{铁电存储器（FeFET）}
+\label{sec:ferroelectric}
+
+\subsection{铁电极化翻转的KAI动力学}
+
+铁电体具有两个自发极化态 $\pm P_s$——可直接编码二进制信息。
+翻转动力学由\textbf{Kolmogorov-Avrami-Ishibashi（KAI）}模型描述：
+\begin{equation}\label{eq:kai}
+  P(t) = P_s \left[ 1 - 2 \exp\!\left( -\left( \frac{t}{t_0} \right)^n \right) \right]
+\end{equation}
+其中 $n \approx 2$--$3$，$t_0 = t_\infty \exp(E_a/k_B T)$。
+
+2011年发现HfO$_2$基铁电体（Si:HfO$_2$, Zr:HfO$_2$）是FeFET商业化的关键突破——
+它与CMOS工艺完全兼容，可在 \SI{10}{nm} 尺度的栅堆叠中保持铁电性。
+
+\subsection{FeFET的工作原理}
+
+FeFET将MOSFET的栅介质替换为铁电层。铁电极化方向通过积累/耗尽效应强烈调制沟道电导。
+与Flash相比：写入采用压控而非电荷注入（更高效）；读取为纯压控电流调制（无损）；
+保持力受退极化场限制（半对数衰减 $\propto \log t$）。
+
+\subsection{负电容（Negative Capacitance）效应}
+
+在矫顽场附近，铁电体的自由能-极化曲线上 $d^2 F/dP^2 < 0$，
+对应\textbf{微分负电容}（$C = dQ/dV < 0$）。
+将铁电层串联于MOSFET栅堆叠中，可产生电压放大效应，
+有望将亚阈值摆幅降至 $< \SI{60}{mV/dec}$——突破Boltzmann热力学极限。
+
+% ===================================================================
+\section{技术对比与总结}
+
+\begin{table}[H]
+\centering\caption{新兴存储技术的物理参数对比}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+技术 & 物理机制 & 单元面积 & 写入时间 & P/E寿命 & 多级 \\
+\midrule
+STT-MRAM & 自旋转移矩 & $\sim 20F^2$ & $\sim$\SI{10}{ns} & $>10^{12}$ & 2 bits \\
+SOT-MRAM & 自旋轨道矩 & $\sim 20F^2$ & $<$\SI{1}{ns} & $>10^{12}$ & 2 bits \\
+ReRAM(VCM) & 氧空位迁移 & $\sim 4F^2$ & $\sim$\SI{10}{ns} & $10^6$--$10^{12}$ & 2--3 bits \\
+ReRAM(ECM) & Ag/Cu电化学 & $\sim 4F^2$ & $\sim$\SI{10}{ns} & $10^4$--$10^6$ & 1 bit \\
+PCM & 非晶$\leftrightarrow$晶 & $\sim 4F^2$ & $\sim$\SI{50}{ns} & $10^7$--$10^8$ & 3--4 bits \\
+FeFET & 铁电极化 & $\sim 4F^2$ & $\sim$\SI{10}{ns} & $10^4$--$10^6$ & 1--2 bits \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ===================================================================
+\begin{thebibliography}{99}
+\bibitem{slonczewski96} J. C. Slonczewski, ``Current-driven excitation of magnetic multilayers,'' \textit{J. Magn. Magn. Mater.}, 159, L1--L7, 1996. \href{https://doi.org/10.1016/0304-8853(96)00062-5}{doi:10.1016/0304-8853(96)00062-5}
+\bibitem{miron11} I. M. Miron et al., ``Perpendicular switching of a single ferromagnetic layer induced by in-plane current injection,'' \textit{Nature}, 476, 189--193, 2011. \href{https://doi.org/10.1038/nature10199}{doi:10.1038/nature10199}
+\bibitem{chua71} L. O. Chua, ``Memristor—The missing circuit element,'' \textit{IEEE Trans. Circuit Theory}, 18, 507--519, 1971. \href{https://doi.org/10.1109/TCT.1971.1083337}{doi:10.1109/TCT.1971.1083337}
+\bibitem{strukov08} D. B. Strukov et al., ``The missing memristor found,'' \textit{Nature}, 453, 80--83, 2008. \href{https://doi.org/10.1038/nature06932}{doi:10.1038/nature06932}
+\bibitem{waser09} R. Waser et al., ``Redox-based resistive switching memories,'' \textit{Adv. Mater.}, 21, 2632--2663, 2009. \href{https://doi.org/10.1002/adma.200900375}{doi:10.1002/adma.200900375}
+\bibitem{burr10} G. W. Burr et al., ``Phase change memory technology,'' \textit{J. Vac. Sci. Technol. B}, 28, 223--262, 2010. \href{https://doi.org/10.1116/1.3301579}{doi:10.1116/1.3301579}
+\bibitem{boscke11} T. S. B\"{o}scke et al., ``Ferroelectricity in hafnium oxide thin films,'' \textit{Appl. Phys. Lett.}, 99, 102903, 2011. \href{https://doi.org/10.1063/1.3634052}{doi:10.1063/1.3634052}
+\bibitem{salahuddin08} S. Salahuddin, S. Datta, ``Use of negative capacitance to provide voltage amplification for low power nanoscale devices,'' \textit{Nano Lett.}, 8, 405--410, 2008. \href{https://doi.org/10.1021/nl071804g}{doi:10.1021/nl071804g}
+\end{thebibliography}
+
+\end{document}

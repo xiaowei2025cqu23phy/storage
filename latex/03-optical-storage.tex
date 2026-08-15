@@ -1,0 +1,406 @@
+% ===================================================================
+% 光学数据存储的物理原理：从衍射极限到相变材料
+% ===================================================================
+
+\documentclass[11pt,a4paper,twoside]{article}
+
+\usepackage[UTF8]{ctex}
+% CJK fonts auto-detected by ctex
+\usepackage[T1]{fontenc}
+\usepackage{amsthm}
+\usepackage{newtxtext,newtxmath}
+\usepackage[scaled=0.92]{helvet}
+\usepackage[margin=2.5cm,top=3cm,bottom=2.8cm]{geometry}
+\usepackage{setspace}\onehalfspacing
+\usepackage{fancyhdr}
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[LE]{\small\itshape 第3篇\quad 光学数据存储的物理原理}
+\fancyhead[RO]{\small\itshape 从衍射极限到相变材料}
+\fancyfoot[CE,CO]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\usepackage{amsmath,amsfonts,mathtools}
+\usepackage{bm,physics}
+\usepackage{siunitx}\sisetup{separate-uncertainty,per-mode=symbol}
+\newcommand{\degC}{\ensuremath{{}^{\circ}\mathrm{C}}}
+\DeclareSIUnit{\angstrom}{\text{\AA}}
+\usepackage{graphicx,xcolor}
+\usepackage{tikz,tikz-3dplot}
+\usetikzlibrary{arrows.meta,shapes,decorations.pathmorphing,patterns,calc}
+\usepackage{pgfplots}\pgfplotsset{compat=1.18}
+\usepackage{float}
+\usepackage{array,booktabs,tabularx,multirow,colortbl}
+\usepackage[hidelinks,colorlinks=true,linkcolor=blue!60!black,citecolor=green!50!black,urlcolor=blue!60!black]{hyperref}
+\usepackage[capitalise,nameinlink,noabbrev]{cleveref}
+\theoremstyle{definition}\newtheorem{definition}{定义}[section]
+\theoremstyle{plain}\newtheorem{theorem}{定理}[section]
+\theoremstyle{remark}\newtheorem{remark}{注解}[section]
+\usepackage{tcolorbox}\tcbuselibrary{skins,breakable}
+\newtcolorbox{physbox}[1][]{colback=violet!3!white,colframe=violet!50!black,fonttitle=\bfseries,title=光学物理注释,breakable,#1}
+
+\begin{document}
+
+\title{{\Huge\bfseries 光学数据存储的物理原理}\\[8pt]
+       {\Large 从衍射极限到相变材料}\\[12pt]
+       {\normalsize Physical Principles of Optical Data Storage}}
+\author{}\date{\today}
+\maketitle
+
+\begin{center}\rule{0.8\textwidth}{0.5pt}\\[8pt]
+{\small 凝聚态物理与信息存储交叉专题 · 第3篇}\\[4pt]
+\end{center}
+
+\begin{abstract}
+\noindent
+光学存储（CD、DVD、Blu-ray及档案级全息存储）将信息编码为介质表面或体内
+反射率、偏振态或折射率的空间调制。本文从波动光学与凝聚态物理的第一性原理出发，
+系统阐述光学存储的四层物理基础。首先，从Helmholtz方程和Debye矢量衍射理论导出
+聚焦光斑的衍射极限公式，阐明数值孔径（NA）与波长 $\lambda$ 如何制约存储密度。
+其次，分析相变存储介质（Ge$_2$Sb$_2$Te$_5$合金）的非晶-晶态可逆转变：
+从经典成核-生长（Johnson-Mehl-Avrami-Kolmogorov）理论出发，
+讨论超快激光加热引起的熔化-淬冷非晶化动力学，给出GST-225在ns脉宽下的完整
+热-相变耦合方程。再次，介绍磁光记录（MO）的物理——极向Kerr效应与Faraday效应
+的介电张量描述，以及热磁写入中亚铁磁补偿点写入的物理。最后，
+讨论全息体存储的体Bragg光栅衍射、耦合波理论与多路复用技术。
+本文旨在提供光学存储从基础物理到器件实现的统一理论框架。
+
+\medskip
+\noindent\textbf{关键词}：衍射极限；矢量聚焦；相变存储；成核-生长动力学；
+磁光Kerr效应；全息存储；光折变效应
+\end{abstract}
+
+\tableofcontents\newpage
+
+% ===================================================================
+\section{引言}
+
+光学存储是光子学与凝聚态物理深度交叉的典范。从1982年CD（Philips/Sony）问世，
+到2006年Blu-ray成熟，再到面向数据中心的档案级全息存储，
+光学存储的核心物理问题可以归纳为：
+\begin{enumerate}
+  \item 如何将光聚焦到亚微米尺度？\quad（衍射物理 $\to$ 存储密度）
+  \item 如何利用光子-物质相互作用实现可逆的状态切换？\quad（材料物理 $\to$ 写入/擦除）
+  \item 如何从介质的微小光学对比度中高保真提取信息？\quad（探测物理 $\to$ 读取）
+\end{enumerate}
+
+% ===================================================================
+\section{衍射极限与矢量聚焦理论}
+\label{sec:focus}
+
+\subsection{标量衍射极限：Airy斑与Rayleigh判据}
+
+在标量衍射理论中（NA $< 0.6$），聚焦光斑的径向强度分布由Airy函数给出：
+\begin{equation}\label{eq:airy}
+  I(r) = I_0 \left[ \frac{2 J_1(k r \sin\alpha)}{k r \sin\alpha} \right]^2
+\end{equation}
+其中 $k = 2\pi n / \lambda$ 为介质中波数，$\alpha$ 为会聚半角。
+第一暗环半径：
+\begin{equation}
+  r_0 = \frac{0.61 \lambda}{\sin\alpha} = \frac{0.61\lambda}{\text{NA}}
+\end{equation}
+
+三代光盘技术的面密度的阶梯式跳跃正是通过缩短 $\lambda$ 和增大 NA 实现的：
+
+\begin{table}[H]
+\centering\caption{三代光盘技术的物理参数对比}
+\begin{tabular}{@{}lcccccc@{}}
+\toprule
+格式 & $\lambda$ [nm] & NA & 光斑直径 [$\mu$m] & 道间距 [nm] & 最短标记 [nm] & 单层容量 \\
+\midrule
+CD   & 780 (近红外) & 0.45 & 2.1  & 1600 & 830  & \SI{700}{MB} \\
+DVD  & 650 (红光)   & 0.60 & 1.3  & 740  & 400  & \SI{4.7}{GB} \\
+BD   & 405 (蓝紫光) & 0.85 & 0.58 & 320  & 150  & \SI{25}{GB} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+从CD到Blu-ray，聚焦光斑面积缩小约13倍（$(2.1/0.58)^2 \approx 13.1$），
+单层容量提升约36倍（\SI{25}{GB}/\SI{0.7}{GB}）——额外的提升来自编码效率
+（EFM $\to$ 1,7PP）和纠错码（CIRC $\to$ LDPC）。
+
+\subsection{矢量衍射理论：Richards-Wolf Debye积分}
+
+当 NA $> 0.6$ 时，光的矢量性质（偏振与纵向场分量）不可忽略。
+Richards \& Wolf（1959, Proc. Roy. Soc. A）建立了高NA聚焦的矢量Debye理论。
+
+在Debye近似下（光瞳面 $R_{\text{pupil}} \gg \lambda$），
+焦点附近的电场由角谱积分给出：
+\begin{equation}\label{eq:debye}
+  \mathbf{E}(\mathbf{r}) = -\frac{i k f}{2\pi}
+  \iint_{\Omega} \mathbf{E}_\infty(\theta, \phi)\,
+  e^{i k \hat{\mathbf{s}} \cdot \mathbf{r}}\, d\Omega
+\end{equation}
+其中积分区域 $\Omega$ 为出瞳在单位球面上的投影（$\theta \le \alpha$），
+$\hat{\mathbf{s}}$ 为单位波矢，$f$ 为焦距。
+
+对于沿 $x$ 轴偏振的入射光，焦点附近的电场分量（圆柱坐标 $(\rho, \varphi, z)$）：
+\begin{align}
+  E_x &= -i A (I_0 + I_2 \cos 2\varphi) \\
+  E_y &= -i A I_2 \sin 2\varphi \\
+  E_z &= -2 A I_1 \cos \varphi
+\end{align}
+其中 $A = k f E_0 / 2$，Debye衍射积分 $I_n$：
+\begin{align}
+  I_0 &= \int_0^\alpha \sqrt{\cos\theta}\,\sin\theta\,(1+\cos\theta)\,
+        J_0(k\rho\sin\theta)\, e^{i k z \cos\theta}\, d\theta \\
+  I_1 &= \int_0^\alpha \sqrt{\cos\theta}\,\sin^2\theta\,
+        J_1(k\rho\sin\theta)\, e^{i k z \cos\theta}\, d\theta \\
+  I_2 &= \int_0^\alpha \sqrt{\cos\theta}\,\sin\theta\,(1-\cos\theta)\,
+        J_2(k\rho\sin\theta)\, e^{i k z \cos\theta}\, d\theta
+\end{align}
+
+\textbf{物理意义}：$E_z$ 分量（纵向场，沿光轴）是高NA聚焦的矢量特征。
+当 NA=0.85 时，焦斑中心 $E_z$ 强度可达总强度的 30\% 以上。
+纵向场导致焦点沿偏振方向（$x$方向）拉伸——Airy斑变形为椭圆形。
+这一效应在Blu-ray系统设计中必须考虑（切向/径向 MTF 的非对称性）。
+
+\subsection{近场光学与固体浸没透镜（SIL）}
+
+衍射极限不是不可突破的——它所限制的是远场聚焦，而\textbf{近场光学}利用倏逝波
+（evanescent wave）可实现亚波长局域。倏逝波的横向波矢 $k_\parallel > k$，
+垂直方向波矢为纯虚数：
+\begin{equation}
+  k_z = i\sqrt{k_\parallel^2 - k^2}
+\end{equation}
+倏逝波沿界面法线指数衰减 $\propto \exp(-|k_z| z)$。
+
+固体浸没透镜（SIL）是实现近场记录的核心方案。
+SIL由高折射率材料（GaP, $n \approx 3.3$--$3.5$）制成，置于盘片与物镜之间。
+有效NA为：
+\begin{equation}
+  \text{NA}_{\text{eff}} = n_{\text{SIL}} \times \text{NA}_{\text{obj}}
+  \;\;(\text{半球形})；\quad
+  \text{NA}_{\text{eff}} = n_{\text{SIL}}^2 \times \text{NA}_{\text{obj}}
+  \;\;(\text{超半球/aplanatic})
+\end{equation}
+对于 $n_{\text{SIL}} \approx 3.4$、NA$_{\text{obj}} \approx 0.8$ 的半球形SIL，
+$\text{NA}_{\text{eff}} \approx 2.7$——远超过1.0的自由空间极限！
+当SIL与盘片间距控制在 \SI{<25}{nm}（亚纳米级气浮定位精度），
+可在 $\lambda = \SI{405}{nm}$ 下实现 \SI{\sim 100}{nm} 聚焦光斑。
+
+% ===================================================================
+\section{相变存储介质：非晶-晶态转变动力学}
+\label{sec:pcm}
+
+\subsection{GST-225的材料物理}
+
+可擦写光盘的记录层为硫系相变合金，最典型的是
+\textbf{Ge$_2$Sb$_2$Te$_5$}（GST-225）及其掺杂变体。
+GST-225的稳态晶相为亚稳态NaCl型立方结构（$Fm\bar{3}m$空间群，$a=\SI{6.0}{\angstrom}$），
+其中Te原子占据一组子晶格（4a位），Ge和Sb原子随机占据另一组子晶格（4b位），
+并伴随约20\%的结构空位。非晶态则长程无序。
+
+两种状态间的反射率对比度来源于复折射率 $N = n + i\kappa$ 的巨大差异。
+在 \SI{405}{nm} 处：
+\begin{itemize}
+  \item 非晶态：$n_a \approx 4.2$，$\kappa_a \approx 0.3$（较低消光$\to$较低反射率）
+  \item 晶态：$n_c \approx 1.7$，$\kappa_c \approx 3.0$（高消光$\to$高反射率）
+\end{itemize}
+反射率对比度通过多层膜干涉优化（ZnS-SiO$_2$介电保护层的厚度调控）
+可达到约 $25\%$（非晶标记者）vs $45\%$（晶态背景）。
+
+\subsection{写入（非晶化）：熔化-淬冷动力学}
+
+写入操作的核心是超快激光加热-熔化-急冷循环：
+\begin{enumerate}
+  \item 激光脉冲（功率 \SI{10}{-20}{mW}，脉宽 \SI{10}{-100}{ns}）聚焦至
+  \SI{\sim 0.5}{\mu m} 直径区域，功率密度 $\sim \SI{e7}{-e8}{W/cm^2}$。
+  \item GST温度在几个纳秒内超过熔点 $T_m \approx \SI{610}{-630}{\degC{}}$。
+  液态中原子充分扩散，原有晶序完全消失。
+  \item 激光结束后，热量通过热传导迅速扩散至周围介质。
+  淬冷速率 $dT/dt \sim \SI{e9}{-e10}{K/s}$，远超GST-225的
+  临界冷却速率（$\sim \SI{e8}{K/s}$，玻璃形成所需的），
+  熔融原子被冻结在无序非晶态。
+\end{enumerate}
+
+温度场的时空演化由热传导方程描述：
+\begin{equation}\label{eq:heat-pcm}
+  \rho C_p \frac{\partial T}{\partial t}
+  = \nabla \cdot (\kappa \nabla T) + Q(\mathbf{r}, t)
+\end{equation}
+其中 $Q(\mathbf{r}, t) = \alpha_{\text{abs}} I(\mathbf{r}, t)$
+（$\alpha_{\text{abs}}$ 为吸收系数，$I$ 为光强），
+热源来自光子在GST层中的吸收（GST在 \SI{405}{nm} 的吸收系数
+$\alpha_{\text{abs}} \approx \SI{5e4}{cm^{-1}}$）。
+
+\subsection{擦除（晶化）：JMAK成核-生长动力学}
+
+擦除操作将非晶标记加热至 $T_g < T < T_m$ 温度窗口（$T_g \approx \SI{150}{\degC{}}$，
+$T_{\text{cryst}} \approx \SI{170}{-200}{\degC{}}$），
+在此窗口内晶化成核和生长共同作用将非晶相转化为晶相。
+
+经典成核理论（CNT）给出稳态成核率：
+\begin{equation}\label{eq:nucleation}
+  I_{ss} = N_0 \frac{k_B T}{h}
+          \exp\!\left( -\frac{\Delta G_c + E_a}{k_B T} \right)
+\end{equation}
+其中$\Delta G_c$为临界核形成能，$E_a$为原子跨界面输运的扩散激活能（与下文生长速度中的$E_a$一致）：
+\begin{equation}
+  \Delta G_c = \frac{16\pi}{3} \frac{\sigma^3}{(\Delta G_V)^2},
+  \quad \Delta G_V = \frac{\Delta H_f \Delta T}{T_m}
+\end{equation}
+$\sigma$ 为晶态/非晶态界面自由能，$\Delta G_V$ 为体自由能差值（$\Delta T = T_m - T$
+为过冷度）。临界核半径 $r_c = 2\sigma/|\Delta G_V|$。
+
+晶化体积分数的时间演化由\textbf{Johnson-Mehl-Avrami-Kolmogorov（JMAK）方程}描述：
+\begin{equation}\label{eq:jmak}
+  \boxed{ \chi(T, t) = 1 - \exp\!\big[ -k(T)\, t^n \big] }
+\end{equation}
+其中 $n$ 为Avrami指数：
+\begin{itemize}
+  \item $n\approx 3$--$4$：持续成核 + 三维生长（适用于非晶标记的初始晶化阶段）
+  \item $n\approx 1$--$2$：预先存在的核 + 一维/二维生长（擦除脉冲后期）
+\end{itemize}
+
+生长速率 $u(T)$ 的表达式（Turnbull模型）：
+\begin{equation}\label{eq:growth-rate}
+  u(T) = u_0 \exp\!\left( -\frac{E_a}{k_B T} \right)
+        \left[ 1 - \exp\!\left( -\frac{\Delta G_V}{k_B T} \right) \right]
+\end{equation}
+其中 $E_a$ 为原子穿过非晶/晶体界面的激活能（GST-225中 $E_a \approx \SI{2.0}{-2.5}{eV}$）。
+$u(T)$ 在约 \SI{450}{-500}{\degC{}} 处达到峰值 $\sim \SI{1}{m/s}$。
+
+% ===================================================================
+\section{磁光记录}
+
+\subsection{极向Kerr效应的介电张量描述}
+
+磁光记录利用磁性材料的\textbf{磁光Kerr效应（MOKE）}进行读出。
+当线偏振光从磁化介质表面反射时，偏振面的旋转角 $\theta_K$（Kerr角）正比于磁化强度。
+
+在介电张量语言中，磁光效应源自反对称非对角元。
+对于沿 $z$ 方向（垂直于表面）磁化的介质（极向MOKE，MO记录的标准配置）：
+\begin{equation}\label{eq:dielectric-mo}
+  \boldsymbol{\varepsilon} =
+  \begin{pmatrix}
+    \varepsilon_{xx} & \varepsilon_{xy} & 0 \\
+    -\varepsilon_{xy} & \varepsilon_{xx} & 0 \\
+    0 & 0 & \varepsilon_{zz}
+  \end{pmatrix}
+\end{equation}
+其中 $\varepsilon_{xy} = i Q \varepsilon_{xx}$，$Q$ 为磁光Voigt常数（$|Q| \ll 1$，正比于 $M_z$）。
+
+磁光介质中电磁波的本征模为左旋和右旋圆偏振光，对应不同的折射率
+$n_\pm = \sqrt{\varepsilon_{xx} \pm i\varepsilon_{xy}}$。
+极向MOKE的Kerr旋转角（从Fresnel反射系数及磁光本征模导出）：
+\begin{equation}
+  \Phi_K = \theta_K + i \varepsilon_K
+         = \frac{i\varepsilon_{xy}}{\sqrt{\varepsilon_{xx}}(\varepsilon_{xx} - 1)}
+\end{equation}
+实部 $\theta_K$ 为旋转角（典型值 \ang{0.2}--\ang{0.5}），
+虚部 $\varepsilon_K$ 为椭圆率。读出采用差分探测器：一路检测p分量，一路检测s分量，
+差分放大提取旋转信号。
+
+\subsection{热磁写入与补偿点物理}
+
+磁光记录层为亚铁磁非晶合金（如TbFeCo——铽铁钴）。
+亚铁磁体的两个子晶格（Tb和Fe/Co）磁矩反平行耦合，
+但大小不相等（$|M_{Tb}| \neq |M_{FeCo}|$），产生净磁化 $M_s = |M_{FeCo}| - |M_{Tb}|$。
+
+TbFeCo的关键物理参数是\textbf{补偿温度} $T_{\text{comp}}$（由成分比例调控，
+通常在 \SI{20}{-100}{\degC{}}）。
+在 $T = T_{\text{comp}}$ 时，$M_{Tb} = M_{FeCo}$ $\to$ $M_s = 0$，
+矫顽力 $H_c$ 发散至极大（$H_c \propto 1/M_s$）。
+在更高温度（\SI{200}{-300}{\degC{}}）处，$M_s$ 保持有限而 $H_c$ 迅速下降，
+可被外置偏置磁场（$\sim \SI{100}{-300}{Oe}$）翻转。
+
+写入机制：激光脉冲加热记录层至高温 $\to$ $H_c$ 降至偏置磁场以下
+$\to$ 磁化沿偏置场方向翻转 $\to$ 冷却后 $H_c$ 恢复至 $> \SI{10}{kOe}$，
+写入的亚微米磁畴长期稳定。
+
+\subsection{磁光记录与相变记录的对比}
+
+磁光记录的最大优势是超长耐久性（$>10^6$ 擦写次），但其两个物理局限限制了面密度：
+写入面积受热扩散控制（> 光斑）；读出Kerr角微小（$\sim \ang{0.3}$），
+信噪比受限。这些因素使磁光存储在消费市场被相变光盘取代。
+
+% ===================================================================
+\section{全息体存储}
+\label{sec:holographic}
+
+\subsection{体Bragg光栅的记录}
+
+全息存储将整页数据（而非单个比特）以\textbf{体Bragg光栅}形式记录在光折变晶体中。
+物光（携带SLM页面）与参考光相交产生干涉：
+\begin{equation}\label{eq:interference}
+  I(\mathbf{r}) = |E_S + E_R|^2 = I_S + I_R + 2\sqrt{I_S I_R} \cos(\mathbf{K}\cdot\mathbf{r})
+\end{equation}
+其中 $\mathbf{K} = \mathbf{k}_S - \mathbf{k}_R$ 为光栅矢量，
+$\Lambda = 2\pi/K$ 为光栅间距。
+
+在光折变材料（LiNbO$_3$:Fe, 铌酸锂掺铁）中，
+亮区激发深能级电子至导带 $\to$ 扩散/漂移重新分布
+$\to$ 被深陷阱捕获 $\to$ 产生与光强分布成比例的空间电荷场
+$E_{sc}(\mathbf{r})$ $\to$ 通过线性Pockels效应产生折射率调制：
+\begin{equation}\label{eq:pockels}
+  \Delta n(\mathbf{r}) = -\frac{1}{2} n_0^3 r_{\text{eff}} E_{sc}(\mathbf{r})
+\end{equation}
+
+\subsection{Kogelnik耦合波理论}
+
+读回时以参考光照射，Bragg衍射条件 $2\Lambda \sin\theta_B = \lambda$ 保证了衍射波前
+忠实地重建原始物光。衍射效率 $\eta$ 由Kogelnik（1969, Bell Syst. Tech. J.）耦合波理论给出：
+\begin{equation}\label{eq:kogelnik}
+  \boxed{ \eta = \sin^2\!\left(
+    \frac{\pi \Delta n\, d}{\lambda \cos\theta_B}
+  \right) }
+\end{equation}
+其中 $d$ 为晶体厚度（光栅厚度）。为提高 $\eta$，需要大 $\Delta n$ 和厚 $d$。
+
+\subsection{角度复用的Bragg选择性}
+
+改变参考光入射角 $\theta_R$，产生不同 $\mathbf{K}$ 的光栅——即角度复用。
+半功率角选择性（Bragg失配 $\Delta\theta$ 使 $\eta$ 降至峰值一半）：
+\begin{equation}
+  \Delta\theta_{1/2} \approx \frac{\Lambda}{d}
+                         = \frac{\lambda}{d\sin\theta_B}
+\end{equation}
+对于 $d \approx \SI{1}{cm}$，$\lambda \approx \SI{532}{nm}$，
+$\theta_B \approx \ang{20}$，
+$\Delta\theta_{1/2} \approx \SI{5.6e-5}{rad} \approx \ang{0.0032}$。
+这意味着同一晶体可在Bragg角度跨度（$\sim \ang{10}$，受NA限制）内存入
+$\sim \ang{10} / \ang{0.0032} \approx 3000$ 个独立页面——
+这是全息存储多路复用的物理基础。
+
+\subsection{光折变效应的带输运模型（Kukhtarev, 1979）}
+
+光折变效应的完整微观动力学由耦合偏微分方程组描述：
+\begin{itemize}
+  \item 施主陷阱光电离：$\partial_t N_D^+ = (sI+\beta)(N_D-N_D^+) - \gamma_R n N_D^+$
+  \item 导带电子输运：$\mathbf{J} = e\mu n\mathbf{E} + \mu k_B T \nabla n + \mathbf{J}_{pv}$
+  \item 连续性：$\partial_t n - e^{-1}\nabla\cdot\mathbf{J} = \partial_t N_D^+$
+  \item Poisson：$\nabla\cdot(\varepsilon_0\varepsilon_r\mathbf{E}) = e(N_D^+ - N_A - n)$
+\end{itemize}
+扩散主导（无外加电场）时稳态空间电荷场：
+\begin{equation}
+  E_{sc} = \frac{k_B T}{e} \frac{K}{1 + (K L_D)^2}\, m
+\end{equation}
+其中 $L_D = \sqrt{\varepsilon_0\varepsilon_r k_B T / (e^2 N_A)}$ 为Debye屏蔽长度，
+$m = 2\sqrt{I_S I_R}/(I_S + I_R)$ 为光强调制度。
+
+% ===================================================================
+\section{结论}
+
+光学数据存储汇集了多个物理领域的深刻原理：
+\textbf{衍射物理}严格限制远场聚焦（$\propto \lambda/\text{NA}$）；
+\textbf{相变动力学}（JMAK成核-生长理论）使GST硫系合金能在纳秒级实现
+可逆非晶-晶态切换；\textbf{磁光效应}（介电张量的非对角元描述）
+使得偏振旋转直接编码磁化方向；\textbf{全息体存储}利用Bragg体光栅的
+角度选择性和光折变效应在三维体积中实现多页复用。
+
+光学存储在消费电子领域已被闪存取代，但在档案级长期保存和超大规模数据中心中，
+其独特的物理特性——介质与读取设备物理分离、极高写入能量壁垒——赋予了它不可替代的价值。
+
+% ===================================================================
+\begin{thebibliography}{99}
+\bibitem{born} M. Born, E. Wolf, \textit{Principles of Optics}, 7th ed., Cambridge, 1999. \href{https://doi.org/10.1017/CBO9781139644181}{doi:10.1017/CBO9781139644181}
+\bibitem{richards59} B. Richards, E. Wolf, ``Electromagnetic diffraction in optical systems II,'' \textit{Proc. Roy. Soc. A}, 253, 358--379, 1959. \href{https://doi.org/10.1098/rspa.1959.0200}{doi:10.1098/rspa.1959.0200}
+\bibitem{yamada91} N. Yamada et al., ``Rapid-phase transitions of GeTe-Sb$_2$Te$_3$ pseudobinary amorphous thin films,'' \textit{J. Appl. Phys.}, 69, 2849--2856, 1991. \href{https://doi.org/10.1063/1.348620}{doi:10.1063/1.348620}
+\bibitem{christian} J. W. Christian, \textit{The Theory of Transformations in Metals and Alloys}, Pergamon, 2002. \href{https://www.sciencedirect.com/book/monograph/9780080440194/the-theory-of-transformations-in-metals-and-alloys}{ScienceDirect}
+\bibitem{mcdaniel} T. W. McDaniel, R. H. Victora, \textit{Handbook of Magneto-Optical Data Recording}, Noyes, 1997. \href{https://scholar.google.com/scholar?q=McDaniel+Victora+Handbook+Magneto-Optical+Data+Recording}{Google Scholar}
+\bibitem{coufal} H. Coufal, D. Psaltis, G. T. Sincerbox (eds.), \textit{Holographic Data Storage}, Springer, 2000. \href{https://doi.org/10.1007/978-3-540-47864-5}{doi:10.1007/978-3-540-47864-5}
+\bibitem{kogelnik69} H. Kogelnik, ``Coupled wave theory for thick hologram gratings,'' \textit{Bell Syst. Tech. J.}, 48, 2909--2947, 1969. \href{https://doi.org/10.1002/j.1538-7305.1969.tb01198.x}{doi:10.1002/j.1538-7305.1969.tb01198.x}
+\bibitem{kukhtarev79} N. V. Kukhtarev et al., ``Holographic storage in electrooptic crystals,'' \textit{Ferroelectrics}, 22, 949--960, 1979. \href{https://doi.org/10.1080/00150107908239450}{doi:10.1080/00150107908239450}
+\end{thebibliography}
+
+\end{document}
